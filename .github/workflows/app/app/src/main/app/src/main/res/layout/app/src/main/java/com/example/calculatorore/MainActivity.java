@@ -1,63 +1,33 @@
-package com.example.calculatorore;
 
-import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
+name: Build APK
 
-public class MainActivity extends AppCompatActivity {
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
 
-    private EditText etStart, etEnd;
-    private TextView tvResult;
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-        etStart = findViewById(R.id.etStart);
-        etEnd = findViewById(R.id.etEnd);
-        Button btnCalculate = findViewById(R.id.btnCalculate);
-        tvResult = findViewById(R.id.tvResult);
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-        btnCalculate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                calculateHours();
-            }
-        });
-    }
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-    private void calculateHours() {
-        String startStr = etStart.getText().toString().trim();
-        String endStr = etEnd.getText().toString().trim();
+      - name: Build with Gradle
+        run: gradle assembleDebug
 
-        try {
-            String[] startParts = startStr.split(":");
-            String[] endParts = endStr.split(":");
-
-            int startHour = Integer.parseInt(startParts[0]);
-            int startMinute = Integer.parseInt(startParts[1]);
-
-            int endHour = Integer.parseInt(endParts[0]);
-            int endMinute = Integer.parseInt(endParts[1]);
-
-            int startTotalMinutes = startHour * 60 + startMinute;
-            int endTotalMinutes = endHour * 60 + endMinute;
-
-            if (endTotalMinutes < startTotalMinutes) {
-                endTotalMinutes += 24 * 60; // Trecere în ziua următoare
-            }
-
-            int diffMinutes = endTotalMinutes - startTotalMinutes;
-            int hours = diffMinutes / 60;
-            int minutes = diffMinutes % 60;
-
-            tvResult.setText("Total ore: " + hours + "h " + minutes + "m");
-        } catch (Exception e) {
-            tvResult.setText("Introduceți ore valide (HH:MM)");
-        }
-    }
-}
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
